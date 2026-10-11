@@ -7,10 +7,11 @@ declare global {
   }
 }
 
-const banner = document.querySelector<HTMLElement>('#consent-banner')!;
+const banner = document.querySelector<HTMLElement>('#consent-banner');
 const id = document.body.dataset.gtm || '';
 let granted = false;
 let loaded = false;
+let pageViewSent = false;
 
 window.dataLayer = window.dataLayer || [];
 window.gtag = window.gtag || function gtag(...args: unknown[]) {
@@ -22,13 +23,20 @@ command('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied
 window.gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
 
 function trackGtagPageView() {
-  if (!granted || typeof window.gtag !== 'function') return;
+  if (!granted || pageViewSent || typeof window.gtag !== 'function') return;
+
+  window.gtag('config', 'G-SQVD7F0LQW', {
+    anonymize_ip: true,
+    send_page_view: false,
+  });
+
   window.gtag('event', 'page_view', {
     page_title: document.title,
     page_location: window.location.href,
     page_path: window.location.pathname,
-    anonymize_ip: true,
   });
+
+  pageViewSent = true;
 }
 
 function apply(value: Consent) {
@@ -38,6 +46,8 @@ function apply(value: Consent) {
 
   if (granted) {
     trackGtagPageView();
+  } else {
+    pageViewSent = false;
   }
 
   if (granted && !loaded && /^GTM-[A-Z0-9]+$/.test(id)) {
@@ -49,13 +59,26 @@ function apply(value: Consent) {
   }
 }
 
-try { const saved = localStorage.getItem('liranko-consent'); if (saved === 'granted' || saved === 'denied') apply(saved); else if (id) banner.hidden = false; } catch { if (id) banner.hidden = false; }
+try {
+  const saved = localStorage.getItem('liranko-consent');
+  if (saved === 'granted' || saved === 'denied') {
+    apply(saved);
+  } else if (banner) {
+    banner.hidden = false;
+  }
+} catch {
+  if (banner) banner.hidden = false;
+}
 
-document.querySelector('#consent-settings')?.addEventListener('click', () => { banner.hidden = false; banner.querySelector<HTMLButtonElement>('button')?.focus(); });
+document.querySelector('#consent-settings')?.addEventListener('click', () => {
+  if (banner) banner.hidden = false;
+  banner?.querySelector<HTMLButtonElement>('button[data-consent="granted"]')?.focus();
+});
 document.querySelectorAll<HTMLButtonElement>('[data-consent]').forEach(button => button.addEventListener('click', () => {
   const value = button.dataset.consent as Consent;
   try { localStorage.setItem('liranko-consent', value); } catch { /* Session consent still works. */ }
-  apply(value); banner.hidden = true;
+  apply(value);
+  if (banner) banner.hidden = true;
 }));
 
 document.querySelectorAll<HTMLAnchorElement>('[data-contact]').forEach(link => link.addEventListener('click', () => {

@@ -26,10 +26,10 @@ const canonical = business.domain ? new URL('/portfolio', business.domain).href 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SQVD7F0LQW"></script>
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){ window.dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
-      gtag('config', 'G-SQVD7F0LQW', { send_page_view: false, anonymize_ip: true });
+      window.gtag = window.gtag || function gtag(){ window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+      window.gtag('config', 'G-SQVD7F0LQW', { anonymize_ip: true, send_page_view: false });
     </script>
   </head>
   <body>
@@ -144,6 +144,14 @@ const canonical = business.domain ? new URL('/portfolio', business.domain).href 
     <footer class="container footer">
       <a class="footer-brand" href="/" dir="ltr">LIR<span>ϟ</span>NKO</a>
       <p>© {new Date().getFullYear()} לירנקו – פתרונות חשמל</p>
+      <button id="consent-settings" class="text-link" type="button">העדפות פרטיות</button>
     </footer>
+    <div id="consent-banner" class="consent" role="region" aria-label="העדפות פרטיות" hidden>
+      <p>אנו משתמשים בעוגיות וניתוח כדי לשפר את חוויית הגלישה ולהבין את השימוש באתר. אפשר לאשר מדידה או לדחות אותה בכל עת.</p>
+      <div>
+        <button data-consent="granted">אישור מדידה</button>
+        <button data-consent="denied">דחייה</button>
+      </div>
+    </div>
   </body>
 </html>

@@ -13,11 +13,16 @@ export const business = {
 };
 
 export function contactUrl(kind: 'phone' | 'whatsapp', _service = '') {
-  if (kind === 'phone') return 'tel:0586567657';
+  const raw = (kind === 'phone' ? business.phone : business.whatsapp || business.phone) ?? '';
+  const digits = raw.replace(/\D/g, '');
 
-  const normalized = (business.whatsapp || business.phone).replace(/\D/g, '');
-  if (!/^972\d{9}$/.test(normalized)) return undefined;
+  if (kind === 'phone') {
+    if (!/^972\d{9}$/.test(digits)) return undefined;
+    return `tel:${digits.replace(/^972/, '0')}`;
+  }
+
+  if (!/^972\d{9}$/.test(digits)) return undefined;
 
   const message = 'שלום לירן, הגעתי דרך האתר ואני מעוניין לקבל פרטים על עבודת חשמל.';
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }

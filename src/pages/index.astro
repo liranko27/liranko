@@ -36,10 +36,10 @@ const schema = {
 <meta name="theme-color" content="#080C14"/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/><script async src="https://www.googletagmanager.com/gtag/js?id=G-SQVD7F0LQW"></script>
 <script is:inline>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){ window.dataLayer.push(arguments); }
-  gtag('js', new Date());
-  gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
-  gtag('config', 'G-SQVD7F0LQW', { send_page_view: false, anonymize_ip: true });
+  window.gtag = window.gtag || function gtag(){ window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  window.gtag('config', 'G-SQVD7F0LQW', { anonymize_ip: true, send_page_view: false });
 </script><script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}/>
 </head>
 <body data-gtm={business.gtmId}>
@@ -56,7 +56,7 @@ const schema = {
 </main>
 <footer class="container footer"><a class="footer-brand" href="#" dir="ltr">LIR<span>ϟ</span>NKO</a><p>© {new Date().getFullYear()} לירנקו – פתרונות חשמל</p><button id="consent-settings" class="text-link" type="button">העדפות פרטיות</button></footer>
 <div class="mobile-contact"><ContactButton kind="whatsapp" location="mobile-sticky" compact/><ContactButton kind="phone" location="mobile-sticky" compact/></div>
-<div id="consent-banner" class="consent" role="region" aria-label="העדפות פרטיות" hidden><p>באישורכם נשתמש בכלי מדידה ופרסום כדי להבין את השימוש באתר. אפשר לסרב ולהמשיך להשתמש באתר.</p><div><button data-consent="granted">אישור מדידה ופרסום</button><button data-consent="denied">ללא מדידה ופרסום</button></div></div>
+<div id="consent-banner" class="consent" role="region" aria-label="העדפות פרטיות" hidden><p>אנו משתמשים בעוגיות וניתוח כדי לשפר את חוויית הגלישה ולהבין את השימוש באתר. אפשר לאשר מדידה או לדחות אותה בכל עת.</p><div><button data-consent="granted">אישור מדידה</button><button data-consent="denied">דחייה</button></div></div>
 <div class="lightbox" id="project-lightbox" hidden aria-modal="true" role="dialog" aria-label="גלריית תמונות">
   <button type="button" class="lightbox-close" aria-label="סגור">×</button>
   <button type="button" class="lightbox-nav prev" aria-label="תמונה קודמת">‹</button>
