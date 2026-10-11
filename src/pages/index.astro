@@ -33,8 +33,14 @@ const schema = {
 <meta property="og:type" content="website"/><meta property="og:locale" content="he_IL"/><meta property="og:title" content={title}/><meta property="og:description" content={description}/><meta property="og:site_name" content="LIRANKO"/><meta property="og:image" content="/logo.png"/>
 {canonical && <meta property="og:url" content={canonical}/>}
 <meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content={title}/><meta name="twitter:description" content={description}/><meta name="twitter:image" content="/logo.png"/>
-<meta name="theme-color" content="#080C14"/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-<script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}/>
+<meta name="theme-color" content="#080C14"/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/><script async src="https://www.googletagmanager.com/gtag/js?id=G-SQVD7F0LQW"></script>
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ window.dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  gtag('config', 'G-SQVD7F0LQW', { send_page_view: false, anonymize_ip: true });
+</script><script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}/>
 </head>
 <body data-gtm={business.gtmId}>
 <a class="skip" href="#main">דלגו לתוכן</a>

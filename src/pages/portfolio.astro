@@ -23,6 +23,14 @@ const canonical = business.domain ? new URL('/portfolio', business.domain).href 
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/logo.png" />
     <meta property="theme-color" content="#080C14" />
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SQVD7F0LQW"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ window.dataLayer.push(arguments); }
+      gtag('js', new Date());
+      gtag('consent', 'default', { ad_storage: 'denied', analytics_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+      gtag('config', 'G-SQVD7F0LQW', { send_page_view: false, anonymize_ip: true });
+    </script>
   </head>
   <body>
     <header class="header">
@@ -72,6 +80,8 @@ const canonical = business.domain ? new URL('/portfolio', business.domain).href 
     </div>
 
     <script>
+      import '../scripts/tracking';
+
       const lightbox = document.getElementById('project-lightbox');
       const lightboxImage = lightbox?.querySelector('.lightbox-image') as HTMLImageElement | null;
       const lightboxTitle = lightbox?.querySelector('.lightbox-title') as HTMLParagraphElement | null;
