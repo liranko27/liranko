@@ -1,0 +1,139 @@
+---
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import ContactButton from '../components/ContactButton.astro';
+import { business } from '../data/business';
+import { projects } from '../data/projects';
+import '../styles/global.css';
+
+const title = 'עבודות חשמל | LIRANKO – פרויקטים מכל הארץ';
+const description = 'מבט על עבודות חשמל, תאורה, עמדות טעינה, לוחות חשמל ופתרונות בית חכם שביצע לירן קוזוקרו באזור המרכז והשרון.';
+const canonical = business.domain ? new URL('/portfolio', business.domain).href : undefined;
+---
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="theme-color" content="#080C14" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container nav">
+        <a href="/" class="brand" aria-label="לירנקו — עמוד הבית">
+          <Image src={logo} alt="LIRANKO – פתרונות חשמל" width={240} format="webp" />
+        </a>
+        <nav aria-label="ניווט ראשי">
+          <a href="/#services">שירותים</a>
+          <a href="/#about">אודות</a>
+          <a href="/portfolio">עבודות</a>
+          <a href="/#contact">צור קשר</a>
+        </nav>
+        <ContactButton kind="phone" location="header-portfolio" compact />
+      </div>
+    </header>
+
+    <main>
+      <section class="portfolio-page container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">/ עבודות</p>
+            <h2>עבודות חשמל שבוצעו בסטנדרט אישי.</h2>
+          </div>
+          <a class="button secondary" href="/">חזרה לעמוד הבית</a>
+        </div>
+
+        <div class="project-gallery portfolio-gallery">
+          {projects.map((project, index) => (
+            <button type="button" class="project-card" data-project-card data-index={index} data-title={project.title} data-image={project.image} data-alt={project.alt} aria-label={`פתיחת תמונה: ${project.title}`}>
+              <img src={project.image} alt={project.alt} width={project.width} height={project.height} loading="lazy" />
+              <span class="project-card-title">{project.title}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </main>
+
+    <div class="lightbox" id="project-lightbox" hidden aria-modal="true" role="dialog" aria-label="גלריית תמונות">
+      <button type="button" class="lightbox-close" aria-label="סגור">×</button>
+      <button type="button" class="lightbox-nav prev" aria-label="תמונה קודמת">‹</button>
+      <div class="lightbox-media">
+        <img class="lightbox-image" src="" alt="" />
+        <p class="lightbox-title"></p>
+      </div>
+      <button type="button" class="lightbox-nav next" aria-label="תמונה הבאה">›</button>
+    </div>
+
+    <script>
+      const lightbox = document.getElementById('project-lightbox');
+      const lightboxImage = lightbox?.querySelector('.lightbox-image') as HTMLImageElement | null;
+      const lightboxTitle = lightbox?.querySelector('.lightbox-title') as HTMLParagraphElement | null;
+      const cards = Array.from(document.querySelectorAll('[data-project-card]')) as HTMLElement[];
+      const closeButton = lightbox?.querySelector('.lightbox-close') as HTMLButtonElement | null;
+      const prevButton = lightbox?.querySelector('.prev') as HTMLButtonElement | null;
+      const nextButton = lightbox?.querySelector('.next') as HTMLButtonElement | null;
+
+      let activeIndex = 0;
+
+      function updateLightbox(index: number) {
+        if (!lightbox || !lightboxImage || !lightboxTitle || cards.length === 0) return;
+
+        activeIndex = (index + cards.length) % cards.length;
+        const card = cards[activeIndex];
+        const imageUrl = card.getAttribute('data-image');
+        const title = card.getAttribute('data-title');
+        const alt = card.getAttribute('data-alt');
+
+        if (!imageUrl || !title) return;
+
+        lightboxImage.src = imageUrl;
+        lightboxImage.alt = alt || title;
+        lightboxTitle.textContent = title;
+      }
+
+      function openLightbox(index: number) {
+        if (!lightbox) return;
+        updateLightbox(index);
+        lightbox.hidden = false;
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeLightbox() {
+        if (!lightbox) return;
+        lightbox.hidden = true;
+        document.body.style.overflow = '';
+      }
+
+      cards.forEach((card, index) => {
+        card.addEventListener('click', () => openLightbox(index));
+      });
+
+      closeButton?.addEventListener('click', closeLightbox);
+      prevButton?.addEventListener('click', () => updateLightbox(activeIndex - 1));
+      nextButton?.addEventListener('click', () => updateLightbox(activeIndex + 1));
+      lightbox?.addEventListener('click', (event) => {
+        if (event.target === lightbox) closeLightbox();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (lightbox && !lightbox.hidden) {
+          if (event.key === 'Escape') closeLightbox();
+          if (event.key === 'ArrowRight') updateLightbox(activeIndex + 1);
+          if (event.key === 'ArrowLeft') updateLightbox(activeIndex - 1);
+        }
+      });
+    </script>
+
+    <footer class="container footer">
+      <a class="footer-brand" href="/" dir="ltr">LIR<span>ϟ</span>NKO</a>
+      <p>© {new Date().getFullYear()} לירנקו – פתרונות חשמל</p>
+    </footer>
+  </body>
+</html>

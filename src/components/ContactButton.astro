@@ -1,0 +1,9 @@
+---
+import Icon from './Icon.astro';
+import { contactUrl } from '../data/business';
+interface Props { kind: 'phone' | 'whatsapp'; location: string; service?: string; compact?: boolean; }
+const { kind, location, service = '', compact = false } = Astro.props;
+const href = contactUrl(kind, service);
+const label = kind === 'whatsapp' ? 'דברו איתי בוואטסאפ' : 'התקשרו עכשיו';
+---
+{href ? <a class:list={['button', kind === 'whatsapp' ? 'primary' : 'secondary', {compact}]} href={href} target={kind === 'whatsapp' ? '_blank' : undefined} rel={kind === 'whatsapp' ? 'noopener noreferrer' : undefined} data-contact={kind} data-location={location} data-service={service}><Icon name={kind === 'phone' ? 'phone' : 'whatsapp'}/>{label}<Icon name="arrow"/></a> : <button class:list={['button', kind === 'whatsapp' ? 'primary' : 'secondary', {compact}]} disabled title="מספר הטלפון טרם הוגדר"><Icon name={kind === 'phone' ? 'phone' : 'whatsapp'}/>{label}<span class="missing">בקרוב</span></button>}
