@@ -32,6 +32,20 @@ try {
   business.whatsapp = originalWhatsapp;
 }
 const html = fs.readFileSync('dist/index.html', 'utf8');
+const expectedTitle = 'חשמלאי מוסמך במרכז ובשרון | לירן קוזוקרו – LIRANKO';
+const expectedDescription = 'לירן קוזוקרו, חשמלאי מוסמך ומתקין Shelly מורשה. שירות בתל אביב, ראש העין, המרכז והשרון: תיקוני חשמל, תאורה, שקעים, לוחות חשמל ופתרונות לבית חכם. לתיאום צרו קשר.';
+assert.deepEqual([...html.matchAll(/<title>(.*?)<\/title>/gs)].map(match => match[1]), [expectedTitle]);
+for (const [attribute, key, expected] of [
+  ['name', 'description', expectedDescription],
+  ['property', 'og:title', expectedTitle],
+  ['property', 'og:description', expectedDescription],
+  ['name', 'twitter:title', expectedTitle],
+  ['name', 'twitter:description', expectedDescription],
+]) {
+  const tags = [...html.matchAll(/<meta\b[^>]*>/g)].map(match => match[0]).filter(tag => tag.includes(`${attribute}="${key}"`));
+  assert.equal(tags.length, 1, `Expected one ${key} tag`);
+  assert.ok(tags[0].includes(`content="${expected}"`), `Incorrect ${key}`);
+}
 assert.match(html, /lang="he"/); assert.match(html, /dir="rtl"/);
 assert.equal((html.match(/<h1\b/g) || []).length, 1);
 for (const [, hash] of html.matchAll(/href="#([^"\s]+)"/g)) assert.ok(html.includes(`id="${hash}"`), `Missing anchor ${hash}`);
@@ -46,7 +60,8 @@ assert.match(html, /rel="canonical"/);
 assert.doesNotMatch(html, /meta name="robots" content="noindex, nofollow"/i);
 const jsonLd = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
 assert.equal(jsonLd['@type'], 'Electrician'); assert.ok(!jsonLd.aggregateRating); assert.ok(!jsonLd.address);
-assert.equal(jsonLd.areaServed.length, 3);
+assert.equal(jsonLd.description, expectedDescription);
+assert.deepEqual(jsonLd.areaServed, ['אזור המרכז', 'השרון', 'תל אביב', 'ראש העין']);
 for (const [, asset] of html.matchAll(/(?:src|href)="(\/_astro\/[^"\s]+)"/g)) assert.ok(fs.existsSync('dist' + asset));
 const listeners = new Map();
 const element = key => ({ dataset: {}, hidden: true, addEventListener: (event, fn) => listeners.set(`${key}:${event}`, fn), querySelector: () => ({ focus() {} }) });

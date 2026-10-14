@@ -3,7 +3,7 @@ export const business = {
   owner: 'לירן קוזוקרו',
   phone: '+972586567657',
   whatsapp: '972586567657',
-  serviceArea: ['ראש העין', 'אזור המרכז', 'השרון'],
+  serviceArea: ['אזור המרכז', 'השרון', 'תל אביב', 'ראש העין'],
   domain: 'https://liranko.co.il',
   gtmId: '',
   qualification: 'לירן קוזוקרו | חשמלאי מוסמך | מתקין Shelly מורשה',
