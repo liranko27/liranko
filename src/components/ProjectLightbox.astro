@@ -1,0 +1,34 @@
+<dialog class="project-dialog" aria-label="גלריית עבודות">
+  <button type="button" class="dialog-close" aria-label="סגירת התמונה" autofocus>×</button>
+  <img class="dialog-image" alt="" />
+  <p class="dialog-title" aria-live="polite"></p>
+  <div class="dialog-controls"><button type="button" data-direction="-1">הקודמת</button><button type="button" data-direction="1">הבאה</button></div>
+</dialog>
+<script>
+const dialog = document.querySelector<HTMLDialogElement>('.project-dialog');
+const image = dialog?.querySelector<HTMLImageElement>('img');
+const title = dialog?.querySelector<HTMLElement>('.dialog-title');
+const cards = [...document.querySelectorAll<HTMLButtonElement>('[data-project-card]')];
+let active = 0;
+let opener = 0;
+function show(index: number) {
+  active = (index + cards.length) % cards.length;
+  const card = cards[active];
+  if (!image || !title) return;
+  image.src = card.dataset.image || '';
+  image.alt = card.dataset.alt || '';
+  title.textContent = card.dataset.title || '';
+}
+cards.forEach((card, index) => card.addEventListener('click', () => {
+  opener = index;
+  show(index); dialog?.showModal(); document.body.style.overflow = 'hidden';
+}));
+dialog?.querySelector('.dialog-close')?.addEventListener('click', () => dialog.close());
+dialog?.addEventListener('close', () => { document.body.style.overflow = ''; cards[opener]?.focus(); });
+dialog?.querySelectorAll<HTMLButtonElement>('[data-direction]').forEach(button => button.addEventListener('click', () => show(active + Number(button.dataset.direction))));
+dialog?.addEventListener('keydown', event => {
+  if (event.key === 'ArrowRight') show(active - 1);
+  if (event.key === 'ArrowLeft') show(active + 1);
+});
+dialog?.addEventListener('click', event => { if(event.target === dialog) dialog.close(); });
+</script>

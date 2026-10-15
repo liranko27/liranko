@@ -12,6 +12,7 @@ const id = document.body.dataset.gtm || '';
 let granted = false;
 let loaded = false;
 let pageViewSent = false;
+let analyticsLoaded = false;
 
 window.dataLayer = window.dataLayer || [];
 window.gtag = window.gtag || function gtag(...args: unknown[]) {
@@ -45,6 +46,14 @@ function apply(value: Consent) {
   window.gtag?.('consent', 'update', { ad_storage: value, analytics_storage: value, ad_user_data: value, ad_personalization: value });
 
   if (granted) {
+    if (!analyticsLoaded && !/^GTM-[A-Z0-9]+$/.test(id)) {
+      analyticsLoaded = true;
+      window.gtag?.('js', new Date());
+      const script = document.createElement('script');
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-SQVD7F0LQW';
+      script.async = true;
+      document.head.append(script);
+    }
     trackGtagPageView();
   } else {
     pageViewSent = false;

@@ -1,9 +1,11 @@
-export interface Project { title: string; description: string; image: string; alt: string; width: number; height: number }
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+export interface Project { title: string; description: string; image: string; thumbnail: string; srcset: string; alt: string; width: number; height: number }
 
 const jobs = import.meta.glob('../assets/Jobs/*.{jpeg,jpg,png,webp,avif}', {
   eager: true,
   import: 'default',
-}) as Record<string, { src: string; width: number; height: number }>;
+}) as Record<string, ImageMetadata>;
 
 const curatedProjects = [
   {
@@ -68,20 +70,24 @@ const curatedProjects = [
   },
 ] as const;
 
-export const projects: Project[] = Object.entries(jobs)
+export const projects: Project[] = await Promise.all(Object.entries(jobs)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, image], index) => {
+  .map(async ([path, image], index) => {
+    const full = await getImage({ src: image, width: Math.min(1600, image.width), format: 'webp', quality: 85 });
+    const thumbs = await Promise.all([400, 800].map(width => getImage({ src: image, width: Math.min(width, image.width), format: 'webp', quality: 82 })));
     const match = curatedProjects.find(item => item.key === path);
     const fallbackTitle = `פרויקט ${index + 1}`;
 
     return {
       title: match?.title ?? fallbackTitle,
       description: match?.description ?? 'עבודה שבוצעה על ידי לירנקו עם דגש על איכות, בטיחות ודיוק.',
-      image: image.src,
+      image: full.src,
+      thumbnail: thumbs[1].src,
+      srcset: thumbs.map((thumb, i) => `${thumb.src} ${Math.min([400, 800][i], image.width)}w`).join(', '),
       alt: match ? `${match.title} — עבודת חשמל` : `עבודת חשמל ${index + 1}`,
       width: image.width,
       height: image.height,
     };
-  });
+  }));
 
 export const featuredProjects = projects.slice(0, 6);

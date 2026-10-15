@@ -32,8 +32,8 @@ try {
   business.whatsapp = originalWhatsapp;
 }
 const html = fs.readFileSync('dist/index.html', 'utf8');
-const expectedTitle = 'חשמלאי מוסמך במרכז ובשרון | לירן קוזוקרו – LIRANKO';
-const expectedDescription = 'לירן קוזוקרו, חשמלאי מוסמך ומתקין Shelly מורשה. שירות בתל אביב, ראש העין, המרכז והשרון: תיקוני חשמל, תאורה, שקעים, לוחות חשמל ופתרונות לבית חכם. לתיאום צרו קשר.';
+const expectedTitle = 'לירן קוזוקרו — חשמלאי מוסמך באזור המרכז | LIRANKO';
+const expectedDescription = 'לירן קוזוקרו — חשמלאי מוסמך, רישיון 996726 ומתקין Shelly מורשה. שירותי חשמל לבית ולעסק באזור המרכז: תקלות, לוחות חשמל, תאורה ובית חכם. התקשרו 058-6567657.';
 assert.deepEqual([...html.matchAll(/<title>(.*?)<\/title>/gs)].map(match => match[1]), [expectedTitle]);
 for (const [attribute, key, expected] of [
   ['name', 'description', expectedDescription],
@@ -61,8 +61,8 @@ assert.doesNotMatch(html, /meta name="robots" content="noindex, nofollow"/i);
 const jsonLd = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
 assert.equal(jsonLd['@type'], 'Electrician'); assert.ok(!jsonLd.aggregateRating); assert.ok(!jsonLd.address);
 assert.equal(jsonLd.description, expectedDescription);
-assert.deepEqual(jsonLd.areaServed, ['אזור המרכז', 'השרון', 'תל אביב', 'ראש העין']);
-for (const [, asset] of html.matchAll(/(?:src|href)="(\/_astro\/[^"\s]+)"/g)) assert.ok(fs.existsSync('dist' + asset));
+assert.deepEqual(jsonLd.areaServed, ['אזור המרכז']);
+for (const [, asset] of html.matchAll(/(?:src|href)="(\/_astro\/[^"\s]+)"/g)) assert.ok(fs.existsSync('dist' + decodeURIComponent(asset)), `Missing asset ${asset}`);
 const listeners = new Map();
 const element = key => ({ dataset: {}, hidden: true, addEventListener: (event, fn) => listeners.set(`${key}:${event}`, fn), querySelector: () => ({ focus() {} }) });
 const banner = element('banner'); const settings = element('settings');
@@ -72,7 +72,7 @@ const hero = element('hero'); hero.dataset = { contact: 'whatsapp', location: 'h
 const service = element('service'); service.dataset = { contact: 'phone', location: 'services', service: 'לוחות חשמל' };
 const appended = [];
 const context = { window: { dataLayer: [], location: { href: 'https://liranko.co.il/', pathname: '/' } }, document: { body: { dataset: { gtm: 'GTM-TEST123' } }, head: { append: s => appended.push(s) }, createElement: () => ({}), querySelector: s => s === '#consent-banner' ? banner : settings, querySelectorAll: s => s === '[data-consent]' ? [accept, reject] : [hero, service] }, localStorage: { getItem: () => null, setItem() {} }, Date, encodeURIComponent };
-vm.runInNewContext(compile('src/scripts/tracking.ts').replace('export {};', ''), context);
+vm.runInNewContext(compile('src/scripts/tracking.ts').replace('export {};', ''), { ...context });
 assert.equal(appended.length, 0); listeners.get('hero:click')(); assert.equal(context.window.dataLayer.length, 2);
 listeners.get('reject:click')(); assert.equal(appended.length, 0);
 listeners.get('accept:click')(); assert.equal(appended.length, 1);
@@ -81,4 +81,63 @@ const events = context.window.dataLayer.filter(x => x.event && x.event !== 'gtm.
 assert.equal(events.map(x => x.event).join(','), 'whatsapp_click,hero_cta_click,phone_click,service_cta_click');
 assert.equal(events[3].selected_service, 'לוחות חשמל');
 listeners.get('reject:click')(); const count = context.window.dataLayer.length; listeners.get('hero:click')(); assert.equal(context.window.dataLayer.length, count);
+// Exercise the configured direct GA path as well as the existing optional GTM path.
+context.document.body.dataset.gtm = '';
+context.window.dataLayer = [];
+context.window.gtag = undefined;
+appended.length = 0;
+listeners.clear();
+vm.runInNewContext(compile('src/scripts/tracking.ts').replace('export {};', ''), { ...context });
+assert.equal(appended.length, 0, 'Analytics must not load before consent');
+listeners.get('reject:click')();
+assert.equal(appended.length, 0, 'Declining must not load analytics');
+listeners.get('accept:click')();
+assert.equal(appended.length, 1);
+assert.match(appended[0].src, /gtag\/js\?id=G-SQVD7F0LQW$/);
+listeners.get('reject:click')();
+const revokedCount = context.window.dataLayer.length;
+listeners.get('hero:click')();
+assert.equal(context.window.dataLayer.length, revokedCount);
+listeners.get('accept:click')();
+assert.equal(appended.length, 1, 'Reaccepting must not load a second script');
+
+for (const path of ['dist/index.html', 'dist/portfolio/index.html', 'dist/accessibility-draft/index.html']) {
+  const page = fs.readFileSync(path, 'utf8');
+  assert.equal((page.match(/<h1\b/g) || []).length, 1, `${path}: one main heading`);
+  assert.match(page, /href="#main"/);
+  assert.match(page, /id="main"/);
+  assert.doesNotMatch(page, /ראש העין|השרון|24\/7|הגעה מיידית|ייעוץ חינם/);
+  for (const [, href] of page.matchAll(/href="((?:tel:|https:\/\/wa.me\/)[^"]+)"/g)) {
+    if (href.startsWith('tel:')) assert.equal(href, 'tel:0586567657');
+    else assert.equal(new URL(href.replaceAll('&amp;', '&')).pathname, '/972586567657');
+  }
+  for (const [tag] of page.matchAll(/<img\b[^>]*>/g)) {
+    if (!tag.includes('class="dialog-image"')) assert.match(tag, /alt="[^"]+"/, `${path}: meaningful image description`);
+  }
+  assert.doesNotMatch(page, /<script[^>]+src="https:\/\/www.googletagmanager.com/);
+}
+assert.equal((html.match(/<button\b[^>]*data-project-card/g) || []).length, 6);
+assert.equal((fs.readFileSync('dist/portfolio/index.html', 'utf8').match(/<button\b[^>]*data-project-card/g) || []).length, 12);
+assert.match(html, /fetchpriority="high"/);
+for (const [phoneLink] of html.matchAll(/<a\b[^>]*href="tel:0586567657"[^>]*>.*?<\/a>/gs)) {
+  assert.match(phoneLink, /aria-label="חייגו אליי: 058-6567657"/);
+  assert.match(phoneLink, /class="phone-label">חייגו אליי<\/span>/);
+  assert.match(phoneLink, /<bdi class="phone-number" dir="ltr">058-6567657<\/bdi>/);
+}
+assert.match(html, /loading="eager"/);
+assert.match(html, /<dialog\b/);
+assert.equal(jsonLd.identifier.value, '996726');
+assert.match(fs.readFileSync('dist/accessibility-draft/index.html', 'utf8'), /noindex, nofollow/);
+const css = fs.readFileSync('src/styles/global.css', 'utf8');
+assert.match(css, /safe-area-inset-bottom/);
+assert.match(css, /prefers-reduced-motion/);
+assert.match(css, /:focus-visible/);
+function luminance(hex) {
+  const rgb = hex.match(/[a-f\d]{2}/gi).map(v => parseInt(v, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+  return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+}
+for (const [text, background] of [['b3c0d1','142238'], ['54bcff','101b2b'], ['d2dce9','0d1624'], ['031725','39adf7'], ['f2f8ff','142338']]) {
+  const values = [luminance(text), luminance(background)].sort((a,b) => b-a);
+  assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, `Insufficient text contrast ${text}/${background}`);
+}
 console.log('QA passed: RTL/SEO, anchors/assets, disabled contacts, configured contact URLs, Hebrew encoding, JSON-LD, consent gating, event metadata and revocation.');
