@@ -42,18 +42,17 @@ npm run check:launch && npm run build
 
 Put real photos in `public/projects/`, then add `{ title, description, image: '/projects/file.webp', alt, width, height }` entries to projects.ts. Export appropriately sized WebP photos (roughly 1000px wide). Use actual image dimensions; avoid including customer personal details without permission.
 
-## GTM, GA4 and Google Ads
+## GA4, Google Ads and consent
 
-1. Create a GTM **Web** container. Set its ID in business.ts. The site uses basic consent behavior: all four Google consent signals default to denied; GTM itself is only loaded after acceptance. No noscript tracking iframe is used. The footer allows changing consent. Choice is stored locally; blocked storage falls back to session behavior. No pre-consent CTA events are collected or replayed.
-2. In GA4 create a Web data stream for the final domain. Add a Google tag in GTM with its `G-...` ID. Require analytics_storage consent. Enable consent checks for every tag, including custom tags; don't add a second direct GA snippet.
-3. Add Data Layer Variables (version 2): `cta_location`, `selected_service`, `contact_method`. Add Custom Event triggers for `phone_click`, `whatsapp_click`, `hero_cta_click`, `service_cta_click`. Send corresponding GA4 events with those parameters. A hero/service click intentionally emits the contact event plus a placement event.
-4. In Google Ads create separate website click conversion actions for phone and WhatsApp, clearly named **contact click**, set lead counting to **One**, and obtain conversion ID/label. In GTM configure the Google Ads conversion tags and Conversion Linker with the appropriate ad consent requirements. Map tags only to `phone_click` and `whatsapp_click`; placement events are analysis only. A click is intent, not proof of a completed inquiry. Start click actions as secondary if optimizing toward verified leads elsewhere.
-5. Choose either direct Ads tags or imported GA4 key events as the conversion source for each action. Do not count both as primary. Do not attach Ads tags to hero/service placement events or generic link-click triggers as well. No enhanced conversions/customer data are sent.
-6. Test in GTM Preview/Tag Assistant using a configured test number. Before acceptance, verify no GTM/GA/Ads network requests. Decline and confirm clicks still work but produce no tracking events. Accept, click each placement, and confirm one contact event plus only the relevant placement event. Verify denied consent after revocation prevents future events/tags. In GA4 DebugView enable debug_mode in preview/test configuration and confirm event parameters, then remove the debug override. Publish the GTM container after validating consent checks.
+The current site reuses the existing Google tag (GA4 G-SQVD7F0LQW); business.gtmId is empty. Do not install a second tag or onclick snippet. The shared Measurement component runs on every page, including accessibility, and a delegated handler covers all phone/WhatsApp anchors without changing navigation.
 
-Consent revocation updates Google's consent signals and stops site events; already loaded scripts remain in the browser and must honor consent checks. For tag sets needing removal of vendor cookies, or a fuller regional consent policy, integrate a suitable CMP before adding those vendors.
+Google Ads conversion settings live in **src/data/measurement.ts**: conversionId (including AW-), phoneLabel and whatsappLabel. The actual conversion ID AW-18506956448 and separate phone/WhatsApp labels supplied by the account owner are configured locally and tested; deployment is still awaiting approval. Missing/invalid labels disable the corresponding action; identical labels disable both. Never use the Ads customer/account number as a tag ID.
 
-References: [Google consent setup](https://developers.google.com/tag-platform/security/guides/consent), [Tag Assistant](https://support.google.com/tagmanager/answer/10039345).
+Only consented clicks emit events. Direct GA4 events have an explicit GA4 destination; Ads conversion events have a separate explicit AW destination and no value, currency or customer data. An optional valid GTM ID switches ownership to the container and disables direct GA4/Ads dispatch; never configure both routes for the same action. Existing GTM placement events must not trigger additional conversions.
+
+Run npm run build, npm run check:tracking and npm run verify. The tracking tests simulate clicks with no network or navigation. Native browser/Tag Assistant and Ads receipt checks still require actual IDs and labels. Keep click actions Secondary and Count=One while validating; campaign goal/bidding changes require explicit approval.
+
+See [GOOGLE_ADS_SETUP.md](GOOGLE_ADS_SETUP.md) for the audit, exact configured values, action setup reference, safe Tag Assistant verification and optimization implications. This tracking update is local only until approved for deployment.
 
 ## Deployment — Cloudflare Pages
 

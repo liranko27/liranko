@@ -1,6 +1,5 @@
 ﻿import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import vm from 'node:vm';
 import ts from 'typescript';
 const compile = path => ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
 const { business, contactUrl } = await import('data:text/javascript;base64,' + Buffer.from(compile('src/data/business.ts')).toString('base64'));
@@ -63,43 +62,7 @@ assert.equal(jsonLd['@type'], 'Electrician'); assert.ok(!jsonLd.aggregateRating)
 assert.equal(jsonLd.description, expectedDescription);
 assert.deepEqual(jsonLd.areaServed, ['אזור המרכז']);
 for (const [, asset] of html.matchAll(/(?:src|href)="(\/_astro\/[^"\s]+)"/g)) assert.ok(fs.existsSync('dist' + decodeURIComponent(asset)), `Missing asset ${asset}`);
-const listeners = new Map();
-const element = key => ({ dataset: {}, hidden: true, addEventListener: (event, fn) => listeners.set(`${key}:${event}`, fn), querySelector: () => ({ focus() {} }) });
-const banner = element('banner'); const settings = element('settings');
-const accept = element('accept'); accept.dataset.consent = 'granted';
-const reject = element('reject'); reject.dataset.consent = 'denied';
-const hero = element('hero'); hero.dataset = { contact: 'whatsapp', location: 'hero' };
-const service = element('service'); service.dataset = { contact: 'phone', location: 'services', service: 'לוחות חשמל' };
-const appended = [];
-const context = { window: { dataLayer: [], location: { href: 'https://liranko.co.il/', pathname: '/' } }, document: { body: { dataset: { gtm: 'GTM-TEST123' } }, head: { append: s => appended.push(s) }, createElement: () => ({}), querySelector: s => s === '#consent-banner' ? banner : settings, querySelectorAll: s => s === '[data-consent]' ? [accept, reject] : [hero, service] }, localStorage: { getItem: () => null, setItem() {} }, Date, encodeURIComponent };
-vm.runInNewContext(compile('src/scripts/tracking.ts').replace('export {};', ''), { ...context });
-assert.equal(appended.length, 0); listeners.get('hero:click')(); assert.equal(context.window.dataLayer.length, 2);
-listeners.get('reject:click')(); assert.equal(appended.length, 0);
-listeners.get('accept:click')(); assert.equal(appended.length, 1);
-listeners.get('hero:click')(); listeners.get('service:click')();
-const events = context.window.dataLayer.filter(x => x.event && x.event !== 'gtm.js');
-assert.equal(events.map(x => x.event).join(','), 'whatsapp_click,hero_cta_click,phone_click,service_cta_click');
-assert.equal(events[3].selected_service, 'לוחות חשמל');
-listeners.get('reject:click')(); const count = context.window.dataLayer.length; listeners.get('hero:click')(); assert.equal(context.window.dataLayer.length, count);
-// Exercise the configured direct GA path as well as the existing optional GTM path.
-context.document.body.dataset.gtm = '';
-context.window.dataLayer = [];
-context.window.gtag = undefined;
-appended.length = 0;
-listeners.clear();
-vm.runInNewContext(compile('src/scripts/tracking.ts').replace('export {};', ''), { ...context });
-assert.equal(appended.length, 0, 'Analytics must not load before consent');
-listeners.get('reject:click')();
-assert.equal(appended.length, 0, 'Declining must not load analytics');
-listeners.get('accept:click')();
-assert.equal(appended.length, 1);
-assert.match(appended[0].src, /gtag\/js\?id=G-SQVD7F0LQW$/);
-listeners.get('reject:click')();
-const revokedCount = context.window.dataLayer.length;
-listeners.get('hero:click')();
-assert.equal(context.window.dataLayer.length, revokedCount);
-listeners.get('accept:click')();
-assert.equal(appended.length, 1, 'Reaccepting must not load a second script');
+await import('./check-tracking.mjs');
 
 for (const path of ['dist/index.html', 'dist/portfolio/index.html', 'dist/accessibility-draft/index.html']) {
   const page = fs.readFileSync(path, 'utf8');

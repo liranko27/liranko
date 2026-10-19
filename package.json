@@ -10,6 +10,7 @@
     "check:launch": "node scripts/check-launch.mjs",
     "verify": "node scripts/verify.mjs",
     "check:accessibility": "node scripts/check-accessibility.mjs",
+    "check:tracking": "node scripts/check-tracking.mjs",
     "preview:review": "node scripts/review-preview.mjs"
   },
   "dependencies": {

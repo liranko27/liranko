@@ -11,6 +11,7 @@ import { business } from '../data/business';
 import { services } from '../data/services';
 import { featuredProjects } from '../data/projects';
 import '../styles/global.css';
+import Measurement from '../components/Measurement.astro';
 import AccessibilityMenu from '../components/AccessibilityMenu.astro';
 const title = 'לירן קוזוקרו — חשמלאי מוסמך באזור המרכז | LIRANKO';
 const description = 'לירן קוזוקרו — חשמלאי מוסמך, רישיון 996726 ומתקין Shelly מורשה. שירותי חשמל לבית ולעסק באזור המרכז: תקלות, לוחות חשמל, תאורה ובית חכם. התקשרו 058-6567657.';
@@ -64,7 +65,7 @@ const schema = {
 </main>
 <footer class="container footer"><a class="footer-brand" href="#" dir="ltr">LIR<span>ϟ</span>NKO</a><p>© {new Date().getFullYear()} לירנקו – פתרונות חשמל</p><a class="text-link" href="/accessibility-draft" rel="nofollow">הצהרת נגישות</a><button id="consent-settings" class="text-link" type="button">העדפות פרטיות</button></footer>
 <div class="mobile-contact"><ContactButton kind="phone" location="mobile-sticky" compact/><ContactButton kind="whatsapp" location="mobile-sticky" compact/></div>
-<div id="consent-banner" class="consent" role="region" aria-label="העדפות פרטיות" hidden><p>אנו משתמשים בעוגיות וניתוח כדי לשפר את חוויית הגלישה ולהבין את השימוש באתר. אפשר לאשר מדידה או לדחות אותה בכל עת.</p><div><button data-consent="granted">אישור מדידה</button><button data-consent="denied">דחייה</button></div></div>
+
 <ProjectLightbox />
-<script>import '../scripts/tracking';</script>
-<AccessibilityMenu /></body></html>
+
+<Measurement /><AccessibilityMenu /></body></html>
