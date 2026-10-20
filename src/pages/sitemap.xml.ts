@@ -15,6 +15,7 @@ export const GET: APIRoute = () => {
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
       <url><loc>${rootUrl}</loc></url>
       <url><loc>${portfolioUrl}</loc></url>
+      <url><loc>${new URL('/electrician-rosh-haayin', business.domain).href}</loc></url>
     </urlset>`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8' },
   });

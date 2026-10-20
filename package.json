@@ -11,6 +11,8 @@
     "verify": "node scripts/verify.mjs",
     "check:accessibility": "node scripts/check-accessibility.mjs",
     "check:tracking": "node scripts/check-tracking.mjs",
+    "check:browser": "node scripts/check-browser.cjs",
+    "check:google-privacy": "node scripts/check-google-privacy.cjs",
     "preview:review": "node scripts/review-preview.mjs"
   },
   "dependencies": {

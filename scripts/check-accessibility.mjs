@@ -121,7 +121,7 @@ const migrated = setup(JSON.stringify({size:1,contrast:true,links:true,motion:fa
 for (const option of ['keyboard','font','headings']) assert.ok(!migrated.classes.has(`accessibility-${option}`));
 const blocked = setup(null,true); blocked.increase.click();
 assert.equal(blocked.output.value, '110%'); assert.match(blocked.status.textContent, /אינו מאפשר שמירה/);
-for(const path of ['dist/index.html','dist/portfolio/index.html','dist/accessibility-draft/index.html']) {
+for(const path of ['dist/index.html','dist/portfolio/index.html','dist/accessibility-draft/index.html','dist/electrician-rosh-haayin/index.html']) {
   const html = fs.readFileSync(path,'utf8');
   assert.equal((html.match(/id="accessibility-dialog"/g)||[]).length,1);
   assert.match(html, /aria-haspopup="dialog"/);

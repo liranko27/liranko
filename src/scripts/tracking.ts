@@ -7,6 +7,7 @@ declare global {
     dataLayer: unknown[];
     gtag?: (...args: unknown[]) => void;
     __lirankoMeasurementInitialized?: boolean;
+    [key: `ga-disable-${string}`]: boolean;
   }
 }
 
@@ -20,6 +21,33 @@ function initializeMeasurement() {
   const duplicateLabels = !!ads.phoneLabel && ads.phoneLabel === ads.whatsappLabel;
   let granted = false;
   let loaded = false;
+  // Memory only; static document navigations start a fresh instance (no pre-consent storage).
+  const campaignKeys = new Set(['gclid', 'dclid', 'gbraid', 'wbraid', 'gad_source', 'gad_campaignid',
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_id', 'utm_term', 'utm_content',
+    'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic']);
+  function filteredUrl(raw: string, campaigns = true) {
+    try {
+      const url = new URL(raw);
+      if (!['http:', 'https:'].includes(url.protocol)) return '';
+      const clean = new URL(url.origin + url.pathname);
+      if (campaigns) for (const [key, value] of url.searchParams) {
+        // Campaign metadata must never contain customer-provided free text.
+        if (campaignKeys.has(key) && !clean.searchParams.has(key) && value.length <= 200 &&
+            !/[\u0000-\u001f@]/.test(value) && !/(?:\+?972|0)[ -]?5\d(?:[ -]?\d){7}/.test(value)) clean.searchParams.set(key, value);
+      }
+      return clean.href;
+    } catch { return ''; }
+  }
+  const landing = new URL(filteredUrl(window.location.href));
+  const referrerUrl = filteredUrl(document.referrer || '', false);
+  const referrer = referrerUrl ? new URL(referrerUrl).origin + '/' : '';
+  try {
+    const previous = new URL(filteredUrl(document.referrer || ''));
+    if (previous.origin === landing.origin && !landing.search) {
+      previous.searchParams.forEach((value, key) => landing.searchParams.set(key, value));
+    }
+  } catch { /* A same-origin referrer can retain campaign metadata for one document hop. */ }
+  const pageContext = { page_location: landing.href, page_referrer: referrer, page_path: landing.pathname };
 
   function destination(method: Contact) {
     const label = method === 'phone' ? ads.phoneLabel : ads.whatsappLabel;
@@ -41,6 +69,8 @@ function initializeMeasurement() {
 
   function loadTags() {
     if (loaded) return;
+    // Sanitize defaults for automatic/engagement events as well as our explicit events.
+    tag('set', pageContext);
     // A configured GTM container owns dispatch; otherwise reuse the existing Google tag.
     if (useGtm) {
       loaded = true;
@@ -57,14 +87,13 @@ function initializeMeasurement() {
     loaded = true;
     tag('js', new Date());
     if (ga4Id) {
-      tag('config', ga4Id, { send_page_view: false });
-      const page = new URL(window.location.href);
+      tag('config', ga4Id, { send_page_view: false, ...pageContext });
       tag('event', 'page_view', {
         send_to: ga4Id, page_title: document.title,
-        page_location: `${page.origin}${page.pathname}`, page_path: page.pathname,
+        ...pageContext,
       });
     }
-    if (hasAds) tag('config', ads.conversionId, { allow_enhanced_conversions: false });
+    if (hasAds) tag('config', ads.conversionId, { allow_enhanced_conversions: false, ...pageContext });
     const script = document.createElement('script');
     script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(loaderId)}`;
     script.async = true;
@@ -73,6 +102,7 @@ function initializeMeasurement() {
 
   function apply(value: Consent) {
     granted = value === 'granted';
+    if (ga4Id) window[`ga-disable-${ga4Id}`] = !granted;
     consent(value, 'update');
     if (granted) loadTags();
   }
@@ -124,7 +154,7 @@ function initializeMeasurement() {
       if (location === 'services') window.dataLayer.push({ event: 'service_cta_click', ...metadata });
       return; // No direct GA4 or Ads conversion in GTM mode.
     }
-    if (ga4Id) tag('event', eventName, { send_to: ga4Id, ...metadata });
+    if (ga4Id) tag('event', eventName, { send_to: ga4Id, ...pageContext, ...metadata });
     const sendTo = destination(method);
     if (sendTo) tag('event', 'conversion', { send_to: sendTo });
   }

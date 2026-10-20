@@ -1,9 +1,9 @@
 ---
 import Icon from './Icon.astro';
 import { contactUrl } from '../data/business';
-interface Props { kind: 'phone' | 'whatsapp'; location: string; service?: string; compact?: boolean; }
-const { kind, location, service = '', compact = false } = Astro.props;
+interface Props { kind: 'phone' | 'whatsapp'; location: string; service?: string; compact?: boolean; label?: string; }
+const { kind, location, service = '', compact = false, label: customLabel } = Astro.props;
 const href = contactUrl(kind, service);
-const label = kind === 'whatsapp' ? 'שלחו וואטסאפ' : 'חייגו אליי';
+const label = customLabel || (kind === 'whatsapp' ? 'שלחו וואטסאפ' : 'חייגו אליי');
 ---
-{href ? <a class:list={['button', kind === 'phone' ? 'primary phone-button' : 'whatsapp', {compact}]} href={href} aria-label={kind === 'phone' ? 'חייגו אליי: 058-6567657' : undefined} target={kind === 'whatsapp' ? '_blank' : undefined} rel={kind === 'whatsapp' ? 'noopener noreferrer' : undefined} data-contact={kind} data-location={location} data-service={service}><Icon name={kind === 'phone' ? 'phone' : 'whatsapp'}/>{kind === 'phone' ? <span class="phone-copy"><span class="phone-label">{label}</span><bdi class="phone-number" dir="ltr">058-6567657</bdi></span> : <span>{label}</span>}</a> : <button class="button secondary" disabled title="מספר הטלפון טרם הוגדר">{label}<span class="missing">בקרוב</span></button>}
+{href ? <a class:list={['button', kind === 'phone' ? 'primary phone-button' : 'whatsapp', {compact}]} href={href} aria-label={kind === 'phone' ? `${label}: 058-6567657` : undefined} target={kind === 'whatsapp' ? '_blank' : undefined} rel={kind === 'whatsapp' ? 'noopener noreferrer' : undefined} data-contact={kind} data-location={location} data-service={service}><Icon name={kind === 'phone' ? 'phone' : 'whatsapp'}/>{kind === 'phone' ? <span class="phone-copy"><span class="phone-label">{label}</span><bdi class="phone-number" dir="ltr">058-6567657</bdi></span> : <span>{label}</span>}</a> : <button class="button secondary" disabled title="מספר הטלפון טרם הוגדר">{label}<span class="missing">בקרוב</span></button>}

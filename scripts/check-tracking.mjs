@@ -11,7 +11,7 @@ const source = compile('src/scripts/tracking.ts').replace(/^import .*?from ['"]\
 // Synthetic fixtures for edge cases only. Configured real destinations are tested separately below.
 const testAds = { conversionId: 'AW-12345678901', phoneLabel: 'TEST_PHONE_ONLY', whatsappLabel: 'TEST_WHATSAPP_ONLY' };
 
-function setup({ ads = production.ads, gtm = '', saved = null, blocked = false, ga4Id = production.ga4Id, path = '/' } = {}) {
+function setup({ ads = production.ads, gtm = '', saved = null, blocked = false, ga4Id = production.ga4Id, path = '/', href, referrer = '' } = {}) {
   const controls = new Map(); const clicks = []; const auxiliary = []; const scripts = []; const navigations = [];
   const element = name => ({ dataset: {}, hidden: true, focused: false,
     addEventListener: (event, fn) => controls.set(`${name}:${event}`, fn),
@@ -21,13 +21,13 @@ function setup({ ads = production.ads, gtm = '', saved = null, blocked = false, 
   const accept = element('accept'); accept.dataset.consent = 'granted';
   const reject = element('reject'); reject.dataset.consent = 'denied';
   const document = {
-    title: 'LIRANKO', body: { dataset: { gtm } }, head: { append: script => scripts.push(script) },
+    title: 'LIRANKO', referrer, body: { dataset: { gtm } }, head: { append: script => scripts.push(script) },
     createElement: () => ({}), querySelector: selector => selector === '#consent-banner' ? banner : settings,
     querySelectorAll: selector => selector === '[data-consent]' ? [accept, reject] : [],
     addEventListener: (name, fn) => { assert.ok(['click','auxclick'].includes(name)); (name === 'click' ? clicks : auxiliary).push(fn); },
   };
   const storage = new Map(saved ? [['liranko-consent', saved]] : []);
-  const window = { dataLayer: [], location: { href: `https://liranko.co.il${path}?private_query=SECRET#private-hash`, pathname: path } };
+  const window = { dataLayer: [], location: { href: href || `https://liranko.co.il${path}?private_query=SECRET#private-hash`, pathname: path } };
   const context = vm.createContext({ window, document, URL, Date, encodeURIComponent,
     measurement: { ga4Id, ads: { ...ads } },
     localStorage: { getItem: key => { if(blocked) throw Error('blocked'); return storage.get(key) || null; },
@@ -153,7 +153,7 @@ assert.equal(configured.commands().filter(item=>item[0]==='config' && item[1]===
 
 // Exercise every rendered anchor against the actual configured phone/WhatsApp destination.
 let covered = 0;
-for (const route of ['index.html','portfolio/index.html','accessibility-draft/index.html']) {
+for (const route of ['index.html','portfolio/index.html','accessibility-draft/index.html','electrician-rosh-haayin/index.html']) {
   const html = fs.readFileSync(`dist/${route}`,'utf8');
   assert.equal((html.match(/id="consent-banner"/g)||[]).length,1);
   assert.equal((html.match(/id="consent-settings"/g)||[]).length,1);
@@ -172,4 +172,32 @@ for(const href of ['TEL:0586567657','https://api.whatsapp.com/send?phone=9725865
   const before = ui.events('conversion').length; ui.click(href); assert.equal(ui.events('conversion').length,before+1);
 }
 assert.ok(covered>=16);
+// Attribution and URL privacy: entirely synthetic fixtures, never sent to a Google endpoint.
+const campaign = setup({href:'https://liranko.co.il/electrician-rosh-haayin?utm_source=google&utm_medium=cpc&utm_campaign=repairs&utm_id=local-test&utm_source_platform=GoogleAds&gclid=SYNTHETIC_TEST_ONLY&dclid=TEST_ONLY&gbraid=TEST_ONLY&wbraid=TEST_ONLY&gad_source=1&gad_campaignid=TEST_ONLY&name=SECRET&email=SECRET%40example.test&phone=0501234567&text=SECRET#SECRET',referrer:'https://search.example/search?email=SECRET@example.test#SECRET'});
+assert.equal(campaign.scripts.length,0);
+campaign.window.location.href='https://liranko.co.il/electrician-rosh-haayin#services';
+campaign.accept(); campaign.click('tel:0586567657','hero'); campaign.click('https://wa.me/972586567657?text=SECRET','hero');
+const expectedLocation='https://liranko.co.il/electrician-rosh-haayin?utm_source=google&utm_medium=cpc&utm_campaign=repairs&utm_id=local-test&utm_source_platform=GoogleAds&gclid=SYNTHETIC_TEST_ONLY&dclid=TEST_ONLY&gbraid=TEST_ONLY&wbraid=TEST_ONLY&gad_source=1&gad_campaignid=TEST_ONLY';
+for(const name of ['page_view','phone_click','whatsapp_click']) {
+  assert.equal(campaign.events(name)[0][2].page_location,expectedLocation);
+  assert.equal(campaign.events(name)[0][2].page_referrer,'https://search.example/');
+}
+const defaults=campaign.commands().find(x=>x[0]==='set')[1];
+assert.equal(defaults.page_location,expectedLocation);
+assert.doesNotMatch(JSON.stringify(campaign.commands()),/SECRET|0501234567/);
+assert.equal(campaign.events('page_view').length,1,'Anchor changes never add a page view');
+campaign.reject(); assert.equal(campaign.window[`ga-disable-${production.ga4Id}`],true);
+campaign.accept(); assert.equal(campaign.window[`ga-disable-${production.ga4Id}`],false);
+assert.equal(campaign.events('page_view').length,1);
+for(const saved of ['granted','denied']) {
+  const reload=setup({saved});
+  assert.equal(reload.events('page_view').length,saved==='granted'?1:0);
+  assert.equal(reload.scripts.length,saved==='granted'?1:0);
+}
+const hop=setup({saved:'granted',path:'/portfolio',referrer:'https://liranko.co.il/?utm_source=google&utm_medium=cpc&email=SECRET'});
+assert.equal(hop.events('page_view')[0][2].page_location,'https://liranko.co.il/portfolio?utm_source=google&utm_medium=cpc');
+const external=setup({saved:'granted',referrer:'https://external.example/?utm_source=forged'});
+assert.equal(external.events('page_view')[0][2].page_location,'https://liranko.co.il/');
+const invalidCampaign=setup({saved:'granted',href:'https://liranko.co.il/?utm_campaign=SECRET%40example.test&utm_content=0501234567&utm_term='+ 'x'.repeat(201)});
+assert.equal(invalidCampaign.events('page_view')[0][2].page_location,'https://liranko.co.il/');
 console.log(`Tracking QA passed: ${covered} rendered contact links; one matching conversion per click; consent/withdrawal; empty/partial/invalid config; GTM exclusivity; no private click parameters; unchanged navigation. All interactions simulated without network, calls or messages.`);

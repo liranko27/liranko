@@ -104,3 +104,14 @@ for (const [text, background] of [['b3c0d1','142238'], ['54bcff','101b2b'], ['d2
   assert.ok((values[0] + .05) / (values[1] + .05) >= 4.5, `Insufficient text contrast ${text}/${background}`);
 }
 console.log('QA passed: RTL/SEO, anchors/assets, disabled contacts, configured contact URLs, Hebrew encoding, JSON-LD, consent gating, event metadata and revocation.');
+const landing = fs.readFileSync('dist/electrician-rosh-haayin/index.html','utf8');
+assert.equal((landing.match(/<h1\b/g)||[]).length,1);
+assert.match(landing,/חשמלאי מוסמך/); assert.match(landing,/בראש העין והסביבה/);
+assert.match(landing,/rel="canonical" href="https:\/\/liranko.co.il\/electrician-rosh-haayin"/);
+assert.match(landing,/08:00–17:00/); assert.match(landing,/996726/);
+assert.match(landing,/fetchpriority="high"/);
+assert.match(landing,/href="\/portfolio"/);
+assert.doesNotMatch(landing,/24\/7|הגעה מיידית|הגעה תוך שעה|aggregateRating|priceRange/);
+for(const [,id] of landing.matchAll(/href="#([^"\s]+)"/g)) assert.ok(landing.includes(`id="${id}"`));
+assert.match(fs.readFileSync('dist/sitemap.xml','utf8'),/https:\/\/liranko.co.il\/electrician-rosh-haayin/);
+console.log('Service landing page passed: canonical, one H1, real contacts/license, supplied hours, relevant services, anchors, eager responsive portrait and sitemap.');

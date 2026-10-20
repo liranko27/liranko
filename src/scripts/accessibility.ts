@@ -70,7 +70,17 @@ if (dialog && launcher) {
     startedOnBackdrop = false;
     if (shouldClose) dialog.close();
   });
-  // Native dialog contains keyboard focus and closes on Escape (cancel event).
+  // Keep Tab inside the controls, including at the browser chrome boundary.
+  // Escape continues to use the native dialog cancel behavior.
+  dialog.addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const controls = [...dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex="0"]')]
+      .filter(control => control.getClientRects().length > 0);
+    const first = controls[0], last = controls.at(-1);
+    if (!first || !last) return;
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
   dialog.addEventListener('close', () => {
     startedOnBackdrop = false;
     document.body.style.overflow = previousOverflow;
